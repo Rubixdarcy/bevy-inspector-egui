@@ -123,10 +123,8 @@ impl<T> Hierarchy<'_, T> {
         let header_response = response.header_response;
 
         if header_response.clicked() {
-            let selection_mode = SelectionMode::from_ctrl_shift(
-                ui.input().modifiers.ctrl,
-                ui.input().modifiers.shift,
-            );
+            let (ctrl, shift) = ui.input(|i| (i.modifiers.ctrl, i.modifiers.shift));
+            let selection_mode = SelectionMode::from_ctrl_shift(ctrl, shift);
             let extend_with = |from, to| {
                 // PERF: this could be done in one scan
                 let from_position = at_same_level.iter().position(|&entity| entity == from);

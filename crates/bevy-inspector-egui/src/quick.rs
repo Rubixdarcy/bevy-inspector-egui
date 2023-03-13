@@ -10,14 +10,30 @@ use std::marker::PhantomData;
 
 use bevy_app::Plugin;
 use bevy_asset::Asset;
-use bevy_ecs::{prelude::*, query::ReadOnlyWorldQuery};
-use bevy_egui::EguiPlugin;
+use bevy_ecs::{prelude::*, query::{ReadOnlyWorldQuery}};
+use bevy_egui::{EguiPlugin, EguiContexts};
 use bevy_reflect::Reflect;
 use pretty_type_name::pretty_type_name;
 
 use crate::{bevy_inspector, DefaultInspectorConfigPlugin};
 
 const DEFAULT_SIZE: (f32, f32) = (320., 160.);
+
+fn get_egui_context(world: &mut World) -> egui::Context {
+    let egui_context = world
+        .query::<&'static bevy_egui::EguiContext>()
+        .iter_mut(world)
+        .next()
+        .unwrap()
+        .get_mut()
+        .clone();
+    egui_context
+}
+
+fn get_egui_context_system(mut contexts: EguiContexts) -> egui::Context {
+    contexts.ctx_mut().clone()
+}
+
 
 /// Plugin displaying a egui window with an entity list, resources and assets
 ///
@@ -57,15 +73,14 @@ impl Plugin for WorldInspectorPlugin {
             app.add_plugin(EguiPlugin);
         }
 
-        app.add_system(world_inspector_ui);
+        // app.add_system(world_inspector_ui);
+        app.add_system(get_egui_context_system.pipe(world_inspector_ui_test));
+        // app.add_system(get_egui_context_system);
     }
 }
 
 fn world_inspector_ui(world: &mut World) {
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
+    let egui_context = get_egui_context(world);
     egui::Window::new("World Inspector")
         .default_size(DEFAULT_SIZE)
         .show(&egui_context, |ui| {
@@ -76,6 +91,16 @@ fn world_inspector_ui(world: &mut World) {
         });
 }
 
+fn world_inspector_ui_test(In(context): In<egui::Context>, world: &mut World) {
+    egui::Window::new("World Inspector")
+        .default_size(DEFAULT_SIZE)
+        .show(&context, |ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                bevy_inspector::ui_for_world(world, ui);
+                ui.allocate_space(ui.available_size());
+            });
+        });
+}
 /// Plugin displaying an egui window for a single resource.
 /// Remember to insert the resource and call [`App::register_type`](bevy_app::App::register_type).
 ///
@@ -131,10 +156,7 @@ impl<T: Resource + Reflect> Plugin for ResourceInspectorPlugin<T> {
 }
 
 fn inspector_ui<T: Resource + Reflect>(world: &mut World) {
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
+    let egui_context = get_egui_context(world);
     egui::Window::new(pretty_type_name::<T>())
         .default_size((0., 0.))
         .show(&egui_context, |ui| {
@@ -183,7 +205,7 @@ impl<T> StateInspectorPlugin<T> {
     }
 }
 
-impl<T: Reflect> Plugin for StateInspectorPlugin<T> {
+impl<T: Reflect + States> Plugin for StateInspectorPlugin<T> {
     fn build(&self, app: &mut bevy_app::App) {
         if !app.is_plugin_added::<DefaultInspectorConfigPlugin>() {
             app.add_plugin(DefaultInspectorConfigPlugin);
@@ -196,11 +218,10 @@ impl<T: Reflect> Plugin for StateInspectorPlugin<T> {
     }
 }
 
-fn state_ui<T: Reflect>(world: &mut World) {
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
+fn state_ui<T: Reflect + States>(world: &mut World) {
+
+    let egui_context = get_egui_context(world);
+
     egui::Window::new(std::any::type_name::<T>())
         .resizable(false)
         .title_bar(false)
@@ -252,10 +273,7 @@ impl<A: Asset + Reflect> Plugin for AssetInspectorPlugin<A> {
 }
 
 fn asset_inspector_ui<A: Asset + Reflect>(world: &mut World) {
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
+    let egui_context = get_egui_context(world);
     egui::Window::new(pretty_type_name::<A>())
         .default_size(DEFAULT_SIZE)
         .show(&egui_context, |ui| {
@@ -309,10 +327,7 @@ where
 }
 
 fn entity_query_ui<F: ReadOnlyWorldQuery>(world: &mut World) {
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
+    let egui_context = get_egui_context(world);
     egui::Window::new(pretty_type_name::<F>())
         .default_size(DEFAULT_SIZE)
         .show(&egui_context, |ui| {
