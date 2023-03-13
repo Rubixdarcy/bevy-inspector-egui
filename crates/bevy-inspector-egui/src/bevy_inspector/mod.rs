@@ -185,7 +185,7 @@ pub fn ui_for_assets<A: Asset + Reflect>(world: &mut World, ui: &mut egui::Ui) {
 }
 
 /// Display state `T` and change state on edit
-pub fn ui_for_state<T: StateData + Reflect>(world: &mut World, ui: &mut egui::Ui) {
+pub fn ui_for_state<T : Reflect + States>(world: &mut World, ui: &mut egui::Ui) {
     let type_registry = world.resource::<AppTypeRegistry>().0.clone();
     let type_registry = type_registry.read();
 
@@ -201,14 +201,18 @@ pub fn ui_for_state<T: StateData + Reflect>(world: &mut World, ui: &mut egui::Ui
     };
     let mut env = InspectorUi::for_bevy(&type_registry, &mut cx);
 
-    let mut current = state.current().clone();
+    // let mut current = state.current().clone();
 
-    let changed = env.ui_for_reflect(&mut current, ui);
-    if changed {
-        if let Err(e) = state.set(current) {
-            ui.label(format!("{e:?}"));
-        }
-    }
+    let test: &Mut<State<T>> = &state;
+
+    /// let test_ref: &dyn Reflect = &(*state);
+
+    /// let changed = env.ui_for_reflect_readonly(&state, ui);
+    //if changed {
+    //    if let Err(e) = state.set(current) {
+    //        ui.label(format!("{e:?}"));
+    //    }
+    //}
     queue.apply(world);
 }
 
@@ -707,7 +711,7 @@ pub mod short_circuit {
             let handle = reflect_handle
                 .downcast_handle_untyped(value.as_any())
                 .unwrap();
-            let handle_id = handle.id;
+            let handle_id = handle.id();
             let Some(reflect_asset) = env
             .type_registry
             .get_type_data::<ReflectAsset>(reflect_handle.asset_type_id())
@@ -802,12 +806,12 @@ pub mod short_circuit {
                 let handle = reflect_handle
                     .downcast_handle_untyped(handle.as_any())
                     .unwrap();
-                let handle_id = handle.id;
+                let handle_id = handle.id();
 
                 if used_handles.contains(&handle_id) {
                     continue;
                 };
-                used_handles.push(handle.id);
+                used_handles.push(handle.id());
 
                 let asset_value = {
                     // SAFETY: the following code only accesses a resources it has access to, `Assets<T>`
@@ -868,7 +872,7 @@ pub mod short_circuit {
             let handle = reflect_handle
                 .downcast_handle_untyped(value.as_any())
                 .unwrap();
-            let handle_id = handle.id;
+            let handle_id = handle.id();
             let Some(reflect_asset) = env
             .type_registry
             .get_type_data::<ReflectAsset>(reflect_handle.asset_type_id())
@@ -887,7 +891,7 @@ pub mod short_circuit {
 
             let asset_value = {
                 // SAFETY: the following code only accesses a resources it has access to, `Assets<T>`
-                let interior_mutable_world = unsafe { assets_view.get() };
+                let interior_mutable_world = unsafe { assets_view.get().world() };
                 assert!(
                     assets_view.allows_access_to_resource(reflect_asset.assets_resource_type_id())
                 );

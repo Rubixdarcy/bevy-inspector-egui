@@ -1,4 +1,4 @@
-use bevy_ecs::change_detection::{DetectChanges, MutUntyped};
+use bevy_ecs::change_detection::{DetectChangesMut, MutUntyped};
 use bevy_ecs::ptr::PtrMut;
 
 // workaround for https://github.com/bevyengine/bevy/pull/6430
@@ -36,7 +36,7 @@ pub mod guess_entity_name {
         entity: Entity,
     ) -> String {
         // SAFETY: no world references live after this function
-        let world = unsafe { world.get() };
+        let world = unsafe { world.get().world() };
         match world.get_entity(entity) {
             Some(entity) => guess_entity_name_inner(world, entity, type_registry),
             None => format!("Entity {} (inexistent)", entity.index()),

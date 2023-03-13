@@ -183,7 +183,7 @@ impl<T> StateInspectorPlugin<T> {
     }
 }
 
-impl<T: StateData + Reflect> Plugin for StateInspectorPlugin<T> {
+impl<T: Reflect> Plugin for StateInspectorPlugin<T> {
     fn build(&self, app: &mut bevy_app::App) {
         if !app.is_plugin_added::<DefaultInspectorConfigPlugin>() {
             app.add_plugin(DefaultInspectorConfigPlugin);
@@ -196,7 +196,7 @@ impl<T: StateData + Reflect> Plugin for StateInspectorPlugin<T> {
     }
 }
 
-fn state_ui<T: StateData + Reflect>(world: &mut World) {
+fn state_ui<T: Reflect>(world: &mut World) {
     let egui_context = world
         .resource_mut::<bevy_egui::EguiContext>()
         .ctx_mut()
