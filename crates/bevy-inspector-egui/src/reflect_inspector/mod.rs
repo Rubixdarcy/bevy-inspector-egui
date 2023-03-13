@@ -662,13 +662,13 @@ impl InspectorUi<'_, '_> {
                     if let Some(new_value) = default {
                         list.push(new_value);
                     } else {
-                        ui.data(|d| d.insert_temp::<bool>(error_id, true));
+                        ui.data_mut(|d| d.insert_temp::<bool>(error_id, true));
                     }
 
                     changed = true;
                 }
             });
-            let error = *ui.data(|d| d.get_temp_mut_or_default::<bool>(error_id));
+            let error = ui.data_mut(|d| *d.get_temp_mut_or_default::<bool>(error_id));
             if error {
                 errors::no_default_value(ui, info.item_type_name());
             }

@@ -21,7 +21,7 @@ const DEFAULT_SIZE: (f32, f32) = (320., 160.);
 
 fn get_egui_context(world: &mut World) -> egui::Context {
     let egui_context = world
-        .query::<&'static bevy_egui::EguiContext>()
+        .query::<&'static mut bevy_egui::EguiContext>()
         .iter_mut(world)
         .next()
         .unwrap()
