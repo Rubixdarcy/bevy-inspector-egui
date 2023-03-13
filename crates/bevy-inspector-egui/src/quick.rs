@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 
 use bevy_app::Plugin;
 use bevy_asset::Asset;
-use bevy_ecs::{prelude::*, query::ReadOnlyWorldQuery, schedule::StateData};
+use bevy_ecs::{prelude::*, query::ReadOnlyWorldQuery};
 use bevy_egui::EguiPlugin;
 use bevy_reflect::Reflect;
 use pretty_type_name::pretty_type_name;
