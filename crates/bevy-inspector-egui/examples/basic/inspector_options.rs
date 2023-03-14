@@ -59,7 +59,7 @@ fn main() {
         .register_type::<Shape>()
         .register_type::<UiData>()
         .add_startup_system(setup)
-        .add_system(ui_example)
+        .add_system(get_egui_context_system.pipe(ui_example))
         .run();
 }
 
@@ -68,12 +68,11 @@ fn setup(mut commands: Commands, mut ui_data: ResMut<UiData>) {
     ui_data.entity = Some(entity);
 }
 
-fn ui_example(world: &mut World) {
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
+fn get_egui_context_system(mut contexts: bevy_egui::EguiContexts) -> egui::Context {
+    contexts.ctx_mut().clone()
+}
 
+fn ui_example(In(egui_context): In<egui::Context>, world: &mut World) {
     egui::Window::new("UI").show(&egui_context, |ui| {
         egui::ScrollArea::vertical().show(ui, |ui| {
             bevy_inspector_egui::bevy_inspector::ui_for_resource::<UiData>(world, ui);
