@@ -22,11 +22,15 @@ fn main() {
         .register_type::<Configuration>()
         .add_startup_system(setup)
         // add the system showing the UI
-        .add_system(inspector_ui)
+        .add_system(get_egui_context.pipe(inspector_ui))
         .run();
 }
 
-fn inspector_ui(world: &mut World, mut disabled: Local<bool>) {
+fn get_egui_context(mut contexts: bevy_egui::EguiContexts) -> egui::Context {
+    contexts.ctx_mut().clone()
+}
+
+fn inspector_ui(In(egui_context): In<egui::Context>, world: &mut World, mut disabled: Local<bool>) {
     let space_pressed = world
         .resource::<Input<KeyCode>>()
         .just_pressed(KeyCode::Space);
@@ -38,10 +42,6 @@ fn inspector_ui(world: &mut World, mut disabled: Local<bool>) {
     }
 
     // the usual `ResourceInspector` code
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
     egui::Window::new("Resource Inspector").show(&egui_context, |ui| {
         egui::ScrollArea::vertical().show(ui, |ui| {
             bevy_inspector_egui::bevy_inspector::ui_for_resource::<Configuration>(world, ui);

@@ -1,6 +1,7 @@
 use std::any::TypeId;
 
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy_asset::{HandleId, ReflectAsset};
 use bevy_egui::EguiContext;
 use bevy_inspector_egui::bevy_inspector::hierarchy::{hierarchy_ui, SelectedEntities};
@@ -10,6 +11,7 @@ use bevy_inspector_egui::bevy_inspector::{
 use bevy_inspector_egui::DefaultInspectorConfigPlugin;
 use bevy_mod_picking::backends::egui::EguiPointer;
 use bevy_mod_picking::prelude::*;
+use bevy_pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder};
 use bevy_reflect::TypeRegistry;
 use bevy_render::camera::{CameraProjection, Viewport};
 use egui_dock::{NodeIndex, Tree};
@@ -34,6 +36,10 @@ fn main() {
         .run();
 }
 
+fn get_egui_context(mut contexts: bevy_egui::EguiContexts) -> egui::Context {
+    contexts.ctx_mut().clone()
+}
+
 fn auto_add_raycast_target(
     mut commands: Commands,
     query: Query<Entity, (Without<PickRaycastTarget>, With<Handle<Mesh>>)>,
@@ -46,13 +52,11 @@ fn auto_add_raycast_target(
 }
 
 fn handle_pick_events(
+    In(egui_context): In<egui::Context>,
     mut ui_state: ResMut<UiState>,
     mut click_events: EventReader<PointerClick>,
-    mut egui: ResMut<EguiContext>,
     egui_entity: Query<&EguiPointer>,
 ) {
-    let egui_context = egui.ctx_mut();
-
     for click in click_events.iter() {
         if egui_entity.get(click.target()).is_ok() {
             continue;
@@ -82,13 +86,13 @@ fn show_ui_system(world: &mut World) {
 // make camera only render to view not obstructed by UI
 fn set_camera_viewport(
     ui_state: Res<UiState>,
-    windows: Res<Windows>,
+    windows: Query<&bevy::prelude::Window, With<PrimaryWindow>>,
     egui_settings: Res<bevy_egui::EguiSettings>,
     mut cameras: Query<&mut Camera, With<MainCamera>>,
 ) {
+    let window = windows.single();
     let mut cam = cameras.single_mut();
 
-    let window = windows.primary();
     let scale_factor = window.scale_factor() * egui_settings.scale_factor;
 
     let viewport_pos = ui_state.viewport_rect.left_top().to_vec2() * scale_factor as f32;
@@ -428,7 +432,7 @@ fn setup(
     // top light
     commands
         .spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane { size: 0.4 })),
+            mesh: meshes.add(Mesh::from(shape::Plane::for_size(0.4))),
             transform: Transform::from_matrix(Mat4::from_scale_rotation_translation(
                 Vec3::ONE,
                 Quat::from_rotation_x(std::f32::consts::PI),
@@ -457,15 +461,6 @@ fn setup(
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             illuminance: 10000.0,
-            shadow_projection: OrthographicProjection {
-                left: -HALF_SIZE,
-                right: HALF_SIZE,
-                bottom: -HALF_SIZE,
-                top: HALF_SIZE,
-                near: -10.0 * HALF_SIZE,
-                far: 10.0 * HALF_SIZE,
-                ..Default::default()
-            },
             ..Default::default()
         },
         transform: Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::PI / 2.0)),

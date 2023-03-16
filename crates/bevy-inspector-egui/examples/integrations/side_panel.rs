@@ -11,11 +11,16 @@ fn main() {
         .add_plugin(DefaultInspectorConfigPlugin)
         .add_startup_system(setup)
         .add_system(rotator_system)
-        .add_system(inspector_ui)
+        .add_system(get_egui_context.pipe(inspector_ui))
         .run();
 }
 
+fn get_egui_context(mut contexts: bevy_egui::EguiContexts) -> egui::Context {
+    contexts.ctx_mut().clone()
+}
+
 fn inspector_ui(
+    In(egui_context): In<egui::Context>,
     world: &mut World,
     mut selected_entities: Local<SelectedEntities>,
     mut inactive: Local<bool>,
@@ -28,11 +33,6 @@ fn inspector_ui(
     if *inactive {
         return;
     }
-
-    let egui_context = world
-        .resource_mut::<bevy_egui::EguiContext>()
-        .ctx_mut()
-        .clone();
 
     egui::SidePanel::left("hierarchy")
         .default_width(200.0)
